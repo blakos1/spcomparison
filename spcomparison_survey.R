@@ -54,11 +54,17 @@ sliderScale <<- c(
   "Brak",
   "Bardzo male",
   "Niewielkie ",
-  "Trudno powiedziec",
   "Lekkie",
   "Duze",
   "Calkowite"
 ) #global variable bo inaczej nie dziala w linijce 63
+
+# 1 - identyczne
+# 2 - bardzo podobne
+# 3 - trochę podobne
+# 4 - niewielkie podobieństwo
+# 5 - brak podobieństw
+
 
 
 extendInputType(input_type = "textSlider", {
