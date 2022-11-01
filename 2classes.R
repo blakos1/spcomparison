@@ -13,6 +13,7 @@ library(motif)
 library(tidyr)
 library(comat)
 library(philentropy)
+
 # simulate ----------------------------------------------------------------
 simulate_composition = function(fract_dim){
   sim1 = nlm_fbm(100, 100, fract_dim = fract_dim)
@@ -22,15 +23,12 @@ simulate_composition = function(fract_dim){
 fract_dim = c(0.1, 0.4, 0.55, 0.7, 1.0, 1.6)
 param_df = expand.grid(fract_dim = fract_dim)
 
-
 set.seed(2022-06-14)
 my_sims = map(param_df$fract_dim, simulate_composition)
-
 
 param_df2 = expand.grid(breaks = c(0.01, 0.05, 0.1, 0.2, 0.3, 0.5),
                         fract_dim = fract_dim)
 param_df2$my_sims = rep(my_sims, each = 6)
-
 
 simulate_configuration = function(x, breaks){
   sim1 = x %>% 
@@ -41,7 +39,6 @@ simulate_configuration = function(x, breaks){
 }
 
 param_df2$my_sims2 = map2(param_df2$my_sims, param_df2$breaks, simulate_configuration)
-
 
 my_sims2 = do.call(c, param_df2$my_sims2)
 
@@ -80,20 +77,6 @@ compare_dist = function(r1, r2, method = "jensen-shannon", unit = "log2"){
   dist_one_one(r1mc, r2mc, method = method, unit = unit)
 }
 
-param_df2$id = seq_along(param_df2$breaks)
-dist_mat = matrix(nrow = nrow(param_df2), ncol = nrow(param_df2))
-for (i in param_df2$id){
-  for (j in param_df2$id){
-    dist_mat[i, j] = compare_dist(my_sims2[[i]], my_sims2[[j]], method = "jensen-shannon")
-  }
-}
-
-dist_df = as.data.frame(dist_mat)
-dist_df$id = seq_along(dist_df$V1)
-dist_df_long = pivot_longer(dist_df, 1:36)
-dist_df_long$name = as.numeric(gsub("V", "", dist_df_long$name))
-
-
 calc_dist = function(method = "jensen-shannon"){
   param_df2$id = seq_along(param_df2$breaks)
   dist_mat = matrix(nrow = nrow(param_df2), ncol = nrow(param_df2))
@@ -105,15 +88,23 @@ calc_dist = function(method = "jensen-shannon"){
   
   dist_df = as.data.frame(dist_mat)
   dist_df$id = seq_along(dist_df$V1)
-  dist_df_long = pivot_longer(dist_df, 1:36)
+  dist_df_long = pivot_longer(dist_df, 1:nrow(dist_df))
   dist_df_long$name = as.numeric(gsub("V", "", dist_df_long$name))
   colnames(dist_df_long)[colnames(dist_df_long) == "value"] = method
   
   return(dist_df_long[3])
 }
 
-all_methods = philentropy::getDistMethods()[1:4] %>% 
-  lapply(calc_dist) %>% 
+dist_mat = matrix(nrow = nrow(param_df2), ncol = nrow(param_df2))
+dist_df = as.data.frame(dist_mat)
+dist_df$id = seq_along(dist_df$V1)
+dist_df_long = pivot_longer(dist_df, 1:nrow(dist_df))[1:2]
+dist_df_long$name = as.numeric(gsub("V", "", dist_df_long$name))
+
+all_methods = philentropy::getDistMethods()[1:4] %>%
+  lapply(calc_dist) %>%
   do.call(what = cbind)
+
+all_methods = cbind(dist_df_long, all_methods)
 
 #benchmark szybkosc liczenia vs trafnosc obliczenia
