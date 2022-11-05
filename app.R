@@ -10,7 +10,7 @@ options(
   # whenever there is one account token found, use the cached token
   gargle_oauth_email = TRUE,
   # specify auth tokens should be stored in a hidden directory ".secrets"
-  gargle_oauth_cache = "spcomparison/.secrets"
+  gargle_oauth_cache = ".secrets"
 )
 
 gsheets = "https://docs.google.com/spreadsheets/d/1oEMCCRoSdRS-iiXGgWlku2h-4SgOREkCv65z2BxRsRE/edit?usp=sharing"
@@ -141,14 +141,6 @@ sliderScale <<- c(
   "Duze",
   "Calkowite"
 ) #global variable bo inaczej nie dziala w linijce 63
-
-# 1 - identyczne
-# 2 - bardzo podobne
-# 3 - trochę podobne
-# 4 - niewielkie podobieństwo
-# 5 - brak podobieństw
-
-
 
 extendInputType(input_type = "textSlider", {
   shinyWidgets::sliderTextInput(
