@@ -4,13 +4,19 @@ library(googlesheets4)
 library(dplyr)
 library(tidyr)
 
+
+# gsheets setup -----------------------------------------------------------
+options(
+  # whenever there is one account token found, use the cached token
+  gargle_oauth_email = TRUE,
+  # specify auth tokens should be stored in a hidden directory ".secrets"
+  gargle_oauth_cache = "spcomparison/.secrets"
+)
+
 gsheets = "https://docs.google.com/spreadsheets/d/1oEMCCRoSdRS-iiXGgWlku2h-4SgOREkCv65z2BxRsRE/edit?usp=sharing"
 sheet_test = read_sheet(gsheets, col_names = FALSE)
 
-
 # images ------------------------------------------------------------------
-# myImgResources <- paste0("resources/img", seq_len(10), ".png")
-
 # Add directory of static resources to Shiny's web server
 addResourcePath(prefix = "resources", directoryPath = "resources")
 
