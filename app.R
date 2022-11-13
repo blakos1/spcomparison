@@ -21,6 +21,15 @@ sheet_test = read_sheet(gsheets, col_names = FALSE)
 addResourcePath(prefix = "resources", directoryPath = "resources")
 
 # app ---------------------------------------------------------------------
+ui <- fluidPage(
+  surveyOutput(df = questions_df,
+               survey_title = "Zmiany struktury przestrzennej kategorii pokrycia terenu",
+               survey_description = "Celem ankiety jest określenie różnic między
+               postrzeganiem zmian struktur przestrzennych przez człowieka
+               a uzyskanymi wartościami różnych miar niepodobieństwa.",
+               theme = "#F4D03F") #"#F9E79F"?
+)
+
 server <- function(input, output, session) {
   
   sliderScale <<- c(
@@ -145,8 +154,6 @@ server <- function(input, output, session) {
   }
   
   
-  
-  
   renderSurvey()
   
   observeEvent(input$submit, {
@@ -165,7 +172,5 @@ server <- function(input, output, session) {
   observeEvent(input$dismiss, session$reload())
   
 }
-
-
 
 shinyApp(ui, server)
