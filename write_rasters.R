@@ -20,7 +20,9 @@ merged = stack(my_sims2_2classes, my_sims2_3classes)
 for (i in 1:nlayers(merged)){
   x = merged[[i]]
   img = tm_shape(x) +
-    tm_raster(legend.show = FALSE)
+    tm_raster(legend.show = FALSE,
+              palette = rcartocolor::carto_pal(n = 12, name = "Safe")[c(3,4,2)],
+              style = "cat")
   tmap_save(tm = img, filename = paste0("resources/", names(x), ".png"),
             width = 600, height = 600)
 }
