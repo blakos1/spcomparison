@@ -55,6 +55,7 @@ wykres1_2classes = tm_shape(my_sims3) +
   tm_xlab("kompozycja", size = 2) +
   tm_ylab("konfiguracja", size = 2)
 
+dir.create("plots")
 tmap_save(tm = wykres1_2classes, filename = "plots/wykres1_2classes.png",
           width = 1000, height = 1000)
 

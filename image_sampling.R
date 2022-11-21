@@ -90,7 +90,7 @@ sample4 = sample_images(filename_df)
 
 
 # check how many items overlap between all lists --------------------------
-intersect_all <- function(a,b,...){
+intersect_all = function(a,b,...){
   Reduce(intersect, list(a,b,...))
 }
 
@@ -108,8 +108,8 @@ test1 = intersect(sample1, sample2)
 # 
 # test6 = intersect(sample3, sample4)
 
-paste(length(c(test1, test2, test3, test4, test5, test6)), "overlapping items in lists, with",
-length(unique(c(test1, test2, test3, test4, test5, test6))), "unique items")
+# paste(length(c(test1, test2, test3, test4, test5, test6)), "overlapping items in lists, with",
+# length(unique(c(test1, test2, test3, test4, test5, test6))), "unique items")
 
 # write datasets into .csv files ------------------------------------------
 write.csv(sample1, file = "sample1.csv")

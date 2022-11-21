@@ -16,7 +16,7 @@ names(my_sims2_3classes) = paste0("img_3classes_", "row", rownums, "_col", colnu
 
 # write plots -------------------------------------------------------------
 merged = stack(my_sims2_2classes, my_sims2_3classes)
-
+dir.create("resources")
 for (i in 1:nlayers(merged)){
   x = merged[[i]]
   img = tm_shape(x) +
