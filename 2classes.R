@@ -43,8 +43,8 @@ param_df2$my_sims2 = map2(param_df2$my_sims, param_df2$breaks, simulate_configur
 my_sims2 = do.call(c, param_df2$my_sims2)
 
 # viz ---------------------------------------------------------------------
-writeRaster(my_sims2, "my_sims2_2classes.tif", overwrite = TRUE)
-my_sims3 = raster::stack("my_sims2_2classes.tif")
+writeRaster(my_sims2, "data/my_sims2_2classes.tif", overwrite = TRUE)
+my_sims3 = raster::stack("data/my_sims2_2classes.tif")
 
 wykres1_2classes = tm_shape(my_sims3) +
   tm_raster(legend.show = FALSE) +
@@ -98,14 +98,23 @@ calc_dist = function(method = "jensen-shannon"){
 
 dist_mat = matrix(nrow = nrow(param_df2), ncol = nrow(param_df2))
 dist_df = as.data.frame(dist_mat)
-dist_df$id = seq_along(dist_df$V1)
-dist_df_long = pivot_longer(dist_df, 1:nrow(dist_df))[1:2]
-dist_df_long$name = as.numeric(gsub("V", "", dist_df_long$name))
 
-all_methods = philentropy::getDistMethods()[1:4] %>%
+colnums = rep(seq(1:6), 6)
+rownums = rep(1:6, each = 6)
+colnames(dist_df) = paste0("img_2classes_", "row", rownums, "_col", colnums)
+dist_df$id = paste0("img_2classes_", "row", rownums, "_col", colnums)
+
+dist_df_long = pivot_longer(dist_df, 1:nrow(dist_df))[1:2]
+
+all_methods = philentropy::getDistMethods() %>%
   lapply(calc_dist) %>%
   do.call(what = cbind)
 
 all_methods = cbind(dist_df_long, all_methods)
 
+all_methods$questionID = paste0(all_methods$id, "+", all_methods$name)
+
+all_methods = subset(all_methods, select=-c(id, name))
+
+write.csv(all_methods, file = "data/2classes_dist.csv")
 #benchmark szybkosc liczenia vs trafnosc obliczenia

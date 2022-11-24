@@ -31,3 +31,6 @@ resources/*
 plots/*
 *.tif
 .secrets
+rsconnect/*
+data/*
+!data/spcomparison_survey_data.csv

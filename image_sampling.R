@@ -85,8 +85,6 @@ set.seed(2022-11-17)
 
 sample1 = sample_images(filename_df)
 sample2 = sample_images(filename_df)
-sample3 = sample_images(filename_df)
-sample4 = sample_images(filename_df)
 
 
 # check how many items overlap between all lists --------------------------
@@ -94,27 +92,14 @@ intersect_all = function(a,b,...){
   Reduce(intersect, list(a,b,...))
 }
 
-test = intersect_all(sample1, sample2, sample3, sample4) 
+test = intersect_all(sample1, sample2) 
 paste(length(test), "repeating items in all lists")
 
 
 # check how many items overlap between every list -------------------------
 test1 = intersect(sample1, sample2)
-# test2 = intersect(sample1, sample3)
-# test3 = intersect(sample1, sample4)
-# 
-# test4 = intersect(sample2, sample3)
-# test5 = intersect(sample2, sample4)
-# 
-# test6 = intersect(sample3, sample4)
 
-# paste(length(c(test1, test2, test3, test4, test5, test6)), "overlapping items in lists, with",
-# length(unique(c(test1, test2, test3, test4, test5, test6))), "unique items")
 
 # write datasets into .csv files ------------------------------------------
-write.csv(sample1, file = "sample1.csv")
-write.csv(sample2, file = "sample2.csv")
-# write.csv(sample3, file = "sample3.csv")
-# write.csv(sample4, file = "sample4.csv")
-
-# sample11 = read.csv("sample1.csv")
+write.csv(sample1, file = "data/sample1.csv")
+write.csv(sample2, file = "data/sample2.csv")

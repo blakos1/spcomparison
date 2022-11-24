@@ -2,8 +2,8 @@ library(raster)
 library(tmap)
 
 # read files --------------------------------------------------------------
-my_sims2_2classes = stack("my_sims2_2classes.tif")
-my_sims2_3classes = stack("my_sims2_3classes.tif")
+my_sims2_2classes = stack("data/my_sims2_2classes.tif")
+my_sims2_3classes = stack("data/my_sims2_3classes.tif")
 
 # change names of raster layers  ------------------------------------------
 colnums = rep(seq(1:6), 6)

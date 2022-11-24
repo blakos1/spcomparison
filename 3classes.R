@@ -1,15 +1,14 @@
-# library(terra)
-# library(purrr)
-# library(NLMR)
-# library(tmap)
-# library(landscapetools)
-# library(landscapemetrics)
-# library(ggplot2)
-# library(motif)
-# library(tidyr)
-# library(comat)
-# library(philentropy)
-# library(tidyr)
+library(terra)
+library(purrr)
+library(NLMR)
+library(tmap)
+library(landscapetools)
+library(landscapemetrics)
+library(ggplot2)
+library(motif)
+library(tidyr)
+library(comat)
+library(philentropy)
 
 # simulate ----------------------------------------------------------------
 distribute_weights = function(x){
@@ -53,8 +52,8 @@ param_df2$my_sims2 = map2(param_df2$my_sims, param_df2$weighting, simulate_confi
 my_sims2 = do.call(c, param_df2$my_sims2)
 
 # viz ---------------------------------------------------------------------
-writeRaster(my_sims2, "my_sims2_3classes.tif", overwrite = TRUE)
-my_sims3 = raster::stack("my_sims2_3classes.tif")
+writeRaster(my_sims2, "data/my_sims2_3classes.tif", overwrite = TRUE)
+my_sims3 = raster::stack("data/my_sims2_3classes.tif")
 
 wykres1_3classes = tm_shape(my_sims3) +
   tm_raster(legend.show = FALSE) +
@@ -107,38 +106,22 @@ calc_dist = function(method = "jensen-shannon"){
 
 dist_mat = matrix(nrow = nrow(param_df2), ncol = nrow(param_df2))
 dist_df = as.data.frame(dist_mat)
-dist_df$id = seq_along(dist_df$V1)
-dist_df_long = pivot_longer(dist_df, 1:nrow(dist_df))[1:2]
-dist_df_long$name = as.numeric(gsub("V", "", dist_df_long$name))
 
-all_methods = philentropy::getDistMethods()[1:4] %>%
+colnums = rep(seq(1:9), 6)
+rownums = rep(1:6, each = 9)
+colnames(dist_df) = paste0("img_3classes_", "row", rownums, "_col", colnums)
+dist_df$id = paste0("img_3classes_", "row", rownums, "_col", colnums)
+
+dist_df_long = pivot_longer(dist_df, 1:nrow(dist_df))[1:2]
+
+all_methods = philentropy::getDistMethods() %>%
   lapply(calc_dist) %>%
   do.call(what = cbind)
 
 all_methods = cbind(dist_df_long, all_methods)
 
-# #zrobić tabele z nazwą pliku i każdym jego parametrem fract dim i weighting
-#
-# #entropia brzegowa
-# #im niższa wartość tym bardziej jedna kategoria dominuje
-# #wysoka entropia znaczy że rozkład jest bardziej jednorodny
-# #entropia odnosi sie tylko do kompozycji
-# lsm_l_ent2 = function(x,...){
-#   lsm_l_ent(landscape = x,...)$value
-# }
-#
-# lsm_l_ent2(param_df2$my_sims2[[1]], base = "log")
-#
-# x = map_dbl(param_df2$my_sims2, lsm_l_ent2)
-#
-# #konfiguracja - rmi/mi
-# lsm_l_relmutinf()
-# lsm_l_mutinf()
-#
-#
-# #tabela 2 - porównawcza
-# #id1 vs id2
-# #każdy obraz porównać z każdym każdą miarą
-#
-# #pierwsze obrazki powinny różnić się tylko kompozycją
-# #potem tylko konfiguracją
+all_methods$questionID = paste0(all_methods$id, "+", all_methods$name)
+
+all_methods = subset(all_methods, select=-c(id, name))
+
+write.csv(all_methods, file = "data/3classes_dist.csv")
