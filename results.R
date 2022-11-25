@@ -67,11 +67,22 @@ wykres3 = ggplot(merged_wide[merged_wide$classes == "2",], aes(x = euclidean)) +
   geom_histogram(bins = 5)
 wykres3
 
-#nie działa
 library(forcats)
 merged$id = as.factor(as.integer(as.factor(merged$questionID)))
 merged_class2 = subset(merged, classes == "2")
-ggplot(merged_class2, aes(x = fct_reorder(id, "Brak"), y = n, fill = answer)) +
+
+merged_class2_max = merged_class2 |>
+  select(id, n, answer) |> 
+  group_by(id) |>
+  mutate(np = n/sum(n)) |> 
+  arrange(-np) |> 
+  filter(answer == "Brak") |> 
+  pull(id)
+
+diff_classes2 = setdiff(unique(merged_class2$id), merged_class2_max)
+merged_class2_max_all = c(merged_class2_max, diff_classes2)
+
+ggplot(merged_class2, aes(x = factor(id, levels = merged_class2_max_all), y = n, fill = answer)) +
   geom_bar(position = "fill", stat = "identity") +
   scale_y_continuous(labels = scales::percent) +
   # scale_fill_brewer(name = "Pain Groups:", type = "div", palette = "Spectral", direction = -1) +
@@ -79,8 +90,6 @@ ggplot(merged_class2, aes(x = fct_reorder(id, "Brak"), y = n, fill = answer)) +
   ylab("Proportion") + 
   theme_bw() +
   theme(legend.position = "top")
-
-
 
 kruskal.test(jensen.shannon ~ answer, data = merged_class2)
 
