@@ -42,12 +42,14 @@ param_df2$my_sims2 = map2(param_df2$my_sims, param_df2$breaks, simulate_configur
 
 my_sims2 = do.call(c, param_df2$my_sims2)
 
-# viz ---------------------------------------------------------------------
+# viz1 --------------------------------------------------------------------
 writeRaster(my_sims2, "data/my_sims2_2classes.tif", overwrite = TRUE)
 my_sims3 = raster::stack("data/my_sims2_2classes.tif")
 
 wykres1_2classes = tm_shape(my_sims3) +
-  tm_raster(legend.show = FALSE) +
+  tm_raster(legend.show = FALSE,
+            palette = rcartocolor::carto_pal(n = 12, name = "Safe")[c(3,4,2)],
+            style = "cat") +
   tm_facets(ncol = 6) +
   tm_layout(scale = 0.6,
     panel.labels = paste0("FD = ", param_df2$fract_dim,
@@ -57,6 +59,40 @@ wykres1_2classes = tm_shape(my_sims3) +
 
 dir.create("plots")
 tmap_save(tm = wykres1_2classes, filename = "plots/wykres1_2classes.png",
+          width = 1000, height = 1000)
+
+# viz2 --------------------------------------------------------------------
+my_sims3 = raster::stack("data/my_sims2_2classes.tif")
+
+plot(my_sims[[2]])
+plot(my_sims3[[12]])
+
+rast1 = my_sims[[6]]
+rast2 = my_sims3[[36]]
+rast3 = my_sims[[2]]
+rast4 = my_sims3[[12]]
+
+crs(rast1) = "EPSG:2180"
+crs(rast2) = "EPSG:2180"
+crs(rast3) = "EPSG:2180"
+crs(rast4) = "EPSG:2180"
+
+wykres1 = tm_shape(rast1) + 
+  tm_raster(legend.show = FALSE, style = "cont", palette = rev(terrain.colors(50)))
+
+wykres2 = tm_shape(rast2) + 
+  tm_raster(legend.show = FALSE, style="cat", palette = terrain.colors(50)[c(45,1)])
+
+wykres3 = tm_shape(rast3) + 
+  tm_raster(legend.show = FALSE, style = "cont", palette = rev(terrain.colors(50)))
+
+wykres4 = tm_shape(rast4) + 
+  tm_raster(legend.show = FALSE, style="cat", palette = terrain.colors(50)[c(45,1)])
+
+wykres2_gen = tmap_arrange(wykres1, wykres2, wykres3, wykres4)
+remove(wykres1, wykres2, wykres3, wykres4, rast1, rast2, rast3, rast4)
+
+tmap_save(tm = wykres2_gen, filename = "plots/wykres2_gen.png",
           width = 1000, height = 1000)
 
 # calculate metrics -------------------------------------------------------

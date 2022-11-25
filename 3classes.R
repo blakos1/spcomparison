@@ -56,7 +56,9 @@ writeRaster(my_sims2, "data/my_sims2_3classes.tif", overwrite = TRUE)
 my_sims3 = raster::stack("data/my_sims2_3classes.tif")
 
 wykres1_3classes = tm_shape(my_sims3) +
-  tm_raster(legend.show = FALSE) +
+  tm_raster(legend.show = FALSE,
+            palette = rcartocolor::carto_pal(n = 12, name = "Safe")[c(3,4,2)],
+            style = "cat") +
   tm_facets(ncol = 9) +
   tm_layout(scale = 0.6,
             panel.labels = paste0("FD = ", param_df2$fract_dim,
