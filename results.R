@@ -1,15 +1,8 @@
 library(ggplot2)
 library(stringr)
 library(dplyr)
-
-
-# likert scale to numbers -------------------------------------------------
-# ???????????????????????????????????
-# Brak = 1
-# Bardzo małe = 0.75
-# Umiarkowane = 0.5 
-# Bardzo duże = 0.25
-# Pełne = 0
+library(tidyr)
+library(ggpubr)
 
 # read survey data --------------------------------------------------------
 survey_data = read.csv("data/spcomparison_survey_data.csv", header = FALSE)
@@ -25,15 +18,6 @@ survey_data$answer = factor(survey_data$answer,
 
 survey_data$classes = substr(survey_data$questionID, start = 5, stop = 5)
 
-survey_data = survey_data %>% 
-  group_by(questionID, classes, answer) %>% 
-  count(answer)
-
-# survey_data$answer = recode(survey_data$answer,"Brak"=1,"Bardzo małe"=2,
-#                             "Umiarkowane"=3,"Bardzo duże"=4,"Pełne"=5)
-
-survey_data_wide = pivot_wider(survey_data, values_from = n, names_from = answer)
-
 
 # read distance dataframes ------------------------------------------------
 dist2_class = read.csv("data/2classes_dist.csv", row.names = 1)
@@ -44,54 +28,128 @@ dist_merged = rbind(dist2_class, dist3_class) %>%
 
 
 # merge distance df with survey data --------------------------------------
-merged = merge(survey_data, dist_merged, by = "questionID")
-merged_wide = merge(survey_data_wide, dist_merged, by = "questionID")
+grouped_data = survey_data %>%
+  group_by(questionID, classes, answer) %>%
+  count(answer)
 
-
-# scatter plot ------------------------------------------------------------
-wykres1 = ggplot(merged, aes(x = answer, y = wavehedges, fill = classes)) +
-  geom_boxplot()
-
-wykres1
-
-
-wykres2 = ggplot(merged[merged$classes == "2",], aes(x = answer, y = n)) +
-  geom_col()
-wykres2
-
-wykres2 = ggplot(merged[merged$classes == "3",], aes(x = answer, y = n)) +
-  geom_col()
-wykres2
-
-wykres3 = ggplot(merged_wide[merged_wide$classes == "2",], aes(x = euclidean)) +
-  geom_histogram(bins = 5)
-wykres3
-
-library(forcats)
+merged = merge(grouped_data, dist_merged, by = "questionID")
 merged$id = as.factor(as.integer(as.factor(merged$questionID)))
+
 merged_class2 = subset(merged, classes == "2")
+merged_class3 = subset(merged, classes == "3")
+
+merged_wide = pivot_wider(merged, values_from = n, names_from = answer)
+
+
+# boxplot1 ----------------------------------------------------------------
+boxplot1 = ggplot(merged, aes(x = answer, y = wavehedges, fill = classes)) +
+  geom_boxplot() +
+  rremove("xlab") +
+  labs(fill = "Ilość kategorii") +
+  scale_fill_manual(values=c(rcartocolor::carto_pal(n = 12, name = "Safe")[c(2,3)]))
+
+boxplot2 = ggplot(merged, aes(x = answer, y = jensen.shannon, fill = classes)) +
+  geom_boxplot() +
+  rremove("xlab") +
+  scale_fill_manual(values=c(rcartocolor::carto_pal(n = 12, name = "Safe")[c(2,3)]))
+
+boxplot3 = ggplot(merged, aes(x = answer, y = euclidean, fill = classes)) +
+  geom_boxplot() +
+  rremove("xlab") +
+  scale_fill_manual(values=c(rcartocolor::carto_pal(n = 12, name = "Safe")[c(2,3)]))
+
+boxplot4 = ggplot(merged, aes(x = answer, y = jaccard, fill = classes)) +
+  geom_boxplot() +
+  rremove("xlab") +
+  scale_fill_manual(values=c(rcartocolor::carto_pal(n = 12, name = "Safe")[c(2,3)]))
+
+ggarrange(boxplot1, boxplot2, boxplot3, boxplot4,
+          ncol = 2, nrow = 2, common.legend = TRUE, legend="bottom") %>% 
+  ggsave(filename = "plots/boxplots1.png", width = 3000, height = 2500, units = "px")
+
+
+
+# stacked barplot1 --------------------------------------------------------
+library(forcats)
 
 merged_class2_max = merged_class2 |>
-  select(id, n, answer) |> 
+  select(id, n, answer) |>
   group_by(id) |>
-  mutate(np = n/sum(n)) |> 
-  arrange(-np) |> 
-  filter(answer == "Brak") |> 
+  mutate(np = n/sum(n)) |>
+  arrange(-np) |>
+  filter(answer == "Brak") |>
   pull(id)
 
 diff_classes2 = setdiff(unique(merged_class2$id), merged_class2_max)
 merged_class2_max_all = c(merged_class2_max, diff_classes2)
 
-ggplot(merged_class2, aes(x = factor(id, levels = merged_class2_max_all), y = n, fill = answer)) +
+stackedplot1 = ggplot(merged_class2, aes(x = factor(id, levels = merged_class2_max_all), y = n, fill = answer)) +
   geom_bar(position = "fill", stat = "identity") +
   scale_y_continuous(labels = scales::percent) +
-  # scale_fill_brewer(name = "Pain Groups:", type = "div", palette = "Spectral", direction = -1) +
-  # geom_text(aes(y = -0.02, label = Surgeries), size = 2, color = "gray40") +
-  ylab("Proportion") + 
+  scale_fill_manual(name = "Odpowiedź:", values=c(rcartocolor::carto_pal(n = 5, name = "Safe"))) +
+  ylab("Udział odpowiedzi") +
+  xlab("Numer pytania (2 kategorie)") +
+  theme_bw()
+
+
+merged_class3_max = merged_class3 |>
+  select(id, n, answer) |>
+  group_by(id) |>
+  mutate(np = n/sum(n)) |>
+  arrange(-np) |>
+  filter(answer == "Brak") |>
+  pull(id)
+
+diff_classes3 = setdiff(unique(merged_class3$id), merged_class3_max)
+merged_class3_max_all = c(merged_class3_max, diff_classes3)
+
+stackedplot2 = ggplot(merged_class3, aes(x = factor(id, levels = merged_class3_max_all), y = n, fill = answer)) +
+  geom_bar(position = "fill", stat = "identity") +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(name = "Odpowiedź:", values=c(rcartocolor::carto_pal(n = 5, name = "Safe"))) +
+  ylab("Udział odpowiedzi") +
+  xlab("Numer pytania (3 kategorie)") +
+  theme_bw()
+
+ggarrange(stackedplot1, stackedplot2, ncol = 1, nrow = 2, common.legend = TRUE, legend="top") %>% 
+  ggsave(filename = "plots/stacked_barplots1.png", width = 3000, height = 2500, units = "px")
+
+
+# kruskal-wallis test table -----------------------------------------------
+jensh_c2 = round(kruskal.test(jensen.shannon ~ answer, data = merged_class2)$p.value, 3)
+euclidean_c2 = round(kruskal.test(euclidean ~ answer, data = merged_class2)$p.value, 3)
+wavehedges_c2 = round(kruskal.test(wavehedges ~ answer, data = merged_class2)$p.value, 3)
+jaccard_c2 = round(kruskal.test(jaccard ~ answer, data = merged_class2)$p.value, 3)
+
+jensh_c3 = round(kruskal.test(jensen.shannon ~ answer, data = merged_class3)$p.value, 3)
+euclidean_c3 = round(kruskal.test(euclidean ~ answer, data = merged_class3)$p.value, 3)
+wavehedges_c3 = round(kruskal.test(wavehedges ~ answer, data = merged_class3)$p.value, 3)
+jaccard_c3 = round(kruskal.test(jaccard ~ answer, data = merged_class3)$p.value, 3)
+
+table1 = data.frame("miara niepodobieństwa" = c("jensen-shannon", "euclidean", "wavehedges", "jaccard"),
+                    "2 klasy" = c(jensh_c2, euclidean_c2, wavehedges_c2, jaccard_c2),
+                    "3 klasy" = c(jensh_c3, euclidean_c3, wavehedges_c3, jaccard_c3))
+table1 = arrange(table1, X2.klasy)
+
+library(kableExtra)
+kbl(table1, "html", col.names = c("Miara niepodobieństwa", "2 klasy", "3 klasy")) %>%
+  add_header_above(c(" ", "Wartość p-value" = 2)) %>% 
+  kable_styling(font_size = 30) %>% 
+  kable_classic(full_width = F) %>%
+  save_kable(file = "plots/table1.png")
+
+
+# answer count plots ------------------------------------------------------
+
+barplot1 = ggplot(survey_data, aes(x = answer, fill = classes)) +
+  geom_bar(position = position_dodge()) +
+  scale_fill_manual(name = "Liczba kategorii:",
+                    values=c(rcartocolor::carto_pal(n = 12, name = "Safe")[c(2,3)])) +
+  ylab("Liczba odpowiedzi") +
   theme_bw() +
-  theme(legend.position = "top")
+  theme(legend.position = "top") +
+  rremove("xlab")
 
-kruskal.test(jensen.shannon ~ answer, data = merged_class2)
-
-
+ggsave(barplot1, filename = "plots/barplot1.png",
+       width = 1600, height = 1200, units = "px")
 
