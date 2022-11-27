@@ -49,9 +49,9 @@ merged_grouped_class3 = subset(merged_grouped, classes == "3")
 boxplot1 = ggplot(merged, aes(x = answer, y = wavehedges, fill = classes)) +
   geom_boxplot() +
   theme_bw() +
-  labs(fill = "Ilość kategorii") +
-  scale_fill_manual(values=c(rcartocolor::carto_pal(n = 12, name = "Safe")[c(2,3)])) +
-  rremove("xlab")
+  labs(fill = "Liczba kategorii") +
+  rremove("xlab") +
+  scale_fill_manual(values=c(rcartocolor::carto_pal(n = 12, name = "Safe")[c(2,3)]))
 
 boxplot2 = ggplot(merged, aes(x = answer, y = jensen.shannon, fill = classes)) +
   geom_boxplot() +
@@ -72,7 +72,7 @@ boxplot4 = ggplot(merged, aes(x = answer, y = jaccard, fill = classes)) +
   rremove("xlab")
 
 ggarrange(boxplot1, boxplot2, boxplot3, boxplot4,
-          ncol = 2, nrow = 2, common.legend = TRUE, legend="bottom") %>% 
+          ncol = 2, nrow = 2, common.legend = TRUE, legend="top") %>% 
   ggsave(filename = "plots/boxplots1.png", width = 3000, height = 2500, units = "px")
 
 
