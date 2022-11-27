@@ -28,40 +28,48 @@ dist_merged = rbind(dist2_class, dist3_class) %>%
 
 
 # merge distance df with survey data --------------------------------------
-grouped_data = survey_data %>%
-  group_by(questionID, classes, answer) %>%
-  count(answer)
-
-merged = merge(grouped_data, dist_merged, by = "questionID")
+merged = merge(survey_data, dist_merged, by = "questionID")
 merged$id = as.factor(as.integer(as.factor(merged$questionID)))
 
 merged_class2 = subset(merged, classes == "2")
 merged_class3 = subset(merged, classes == "3")
 
-merged_wide = pivot_wider(merged, values_from = n, names_from = answer)
+survey_data_grouped = merged %>%
+  group_by(questionID, classes, answer, id) %>%
+  count(answer)
+
+merged_grouped = merge(survey_data_grouped, dist_merged, by = "questionID")
+merged_wide = pivot_wider(merged_grouped, values_from = n, names_from = answer)
+
+merged_grouped_class2 = subset(merged_grouped, classes == "2")
+merged_grouped_class3 = subset(merged_grouped, classes == "3")
 
 
 # boxplot1 ----------------------------------------------------------------
 boxplot1 = ggplot(merged, aes(x = answer, y = wavehedges, fill = classes)) +
   geom_boxplot() +
-  rremove("xlab") +
+  theme_bw() +
   labs(fill = "Ilość kategorii") +
-  scale_fill_manual(values=c(rcartocolor::carto_pal(n = 12, name = "Safe")[c(2,3)]))
+  scale_fill_manual(values=c(rcartocolor::carto_pal(n = 12, name = "Safe")[c(2,3)])) +
+  rremove("xlab")
 
 boxplot2 = ggplot(merged, aes(x = answer, y = jensen.shannon, fill = classes)) +
   geom_boxplot() +
-  rremove("xlab") +
-  scale_fill_manual(values=c(rcartocolor::carto_pal(n = 12, name = "Safe")[c(2,3)]))
+  theme_bw() +
+  scale_fill_manual(values=c(rcartocolor::carto_pal(n = 12, name = "Safe")[c(2,3)])) +
+  rremove("xlab")
 
 boxplot3 = ggplot(merged, aes(x = answer, y = euclidean, fill = classes)) +
   geom_boxplot() +
-  rremove("xlab") +
-  scale_fill_manual(values=c(rcartocolor::carto_pal(n = 12, name = "Safe")[c(2,3)]))
+  theme_bw() +
+  scale_fill_manual(values=c(rcartocolor::carto_pal(n = 12, name = "Safe")[c(2,3)])) +
+  rremove("xlab")
 
 boxplot4 = ggplot(merged, aes(x = answer, y = jaccard, fill = classes)) +
   geom_boxplot() +
-  rremove("xlab") +
-  scale_fill_manual(values=c(rcartocolor::carto_pal(n = 12, name = "Safe")[c(2,3)]))
+  theme_bw() +
+  scale_fill_manual(values=c(rcartocolor::carto_pal(n = 12, name = "Safe")[c(2,3)])) +
+  rremove("xlab")
 
 ggarrange(boxplot1, boxplot2, boxplot3, boxplot4,
           ncol = 2, nrow = 2, common.legend = TRUE, legend="bottom") %>% 
@@ -72,7 +80,7 @@ ggarrange(boxplot1, boxplot2, boxplot3, boxplot4,
 # stacked barplot1 --------------------------------------------------------
 library(forcats)
 
-merged_class2_max = merged_class2 |>
+merged_class2_max = merged_grouped_class2 |>
   select(id, n, answer) |>
   group_by(id) |>
   mutate(np = n/sum(n)) |>
@@ -80,10 +88,10 @@ merged_class2_max = merged_class2 |>
   filter(answer == "Brak") |>
   pull(id)
 
-diff_classes2 = setdiff(unique(merged_class2$id), merged_class2_max)
+diff_classes2 = setdiff(unique(merged_grouped_class2$id), merged_class2_max)
 merged_class2_max_all = c(merged_class2_max, diff_classes2)
 
-stackedplot1 = ggplot(merged_class2, aes(x = factor(id, levels = merged_class2_max_all), y = n, fill = answer)) +
+stackedplot1 = ggplot(merged_grouped_class2, aes(x = factor(id, levels = merged_class2_max_all), y = n, fill = answer)) +
   geom_bar(position = "fill", stat = "identity") +
   scale_y_continuous(labels = scales::percent) +
   scale_fill_manual(name = "Odpowiedź:", values=c(rcartocolor::carto_pal(n = 5, name = "Safe"))) +
@@ -92,7 +100,7 @@ stackedplot1 = ggplot(merged_class2, aes(x = factor(id, levels = merged_class2_m
   theme_bw()
 
 
-merged_class3_max = merged_class3 |>
+merged_class3_max = merged_grouped_class3 |>
   select(id, n, answer) |>
   group_by(id) |>
   mutate(np = n/sum(n)) |>
@@ -100,10 +108,10 @@ merged_class3_max = merged_class3 |>
   filter(answer == "Brak") |>
   pull(id)
 
-diff_classes3 = setdiff(unique(merged_class3$id), merged_class3_max)
+diff_classes3 = setdiff(unique(merged_grouped_class3$id), merged_class3_max)
 merged_class3_max_all = c(merged_class3_max, diff_classes3)
 
-stackedplot2 = ggplot(merged_class3, aes(x = factor(id, levels = merged_class3_max_all), y = n, fill = answer)) +
+stackedplot2 = ggplot(merged_grouped_class3, aes(x = factor(id, levels = merged_class3_max_all), y = n, fill = answer)) +
   geom_bar(position = "fill", stat = "identity") +
   scale_y_continuous(labels = scales::percent) +
   scale_fill_manual(name = "Odpowiedź:", values=c(rcartocolor::carto_pal(n = 5, name = "Safe"))) +
@@ -116,15 +124,16 @@ ggarrange(stackedplot1, stackedplot2, ncol = 1, nrow = 2, common.legend = TRUE, 
 
 
 # kruskal-wallis test table -----------------------------------------------
-jensh_c2 = round(kruskal.test(jensen.shannon ~ answer, data = merged_class2)$p.value, 3)
-euclidean_c2 = round(kruskal.test(euclidean ~ answer, data = merged_class2)$p.value, 3)
-wavehedges_c2 = round(kruskal.test(wavehedges ~ answer, data = merged_class2)$p.value, 3)
-jaccard_c2 = round(kruskal.test(jaccard ~ answer, data = merged_class2)$p.value, 3)
+library(scales)
+jensh_c2 = as.numeric(scientific(kruskal.test(jensen.shannon ~ answer, data = merged_class2)$p.value, digits = 2))
+euclidean_c2 = as.numeric(scientific(kruskal.test(euclidean ~ answer, data = merged_class2)$p.value, digits = 2))
+wavehedges_c2 = as.numeric(scientific(kruskal.test(wavehedges ~ answer, data = merged_class2)$p.value, digits = 2))
+jaccard_c2 = as.numeric(scientific(kruskal.test(jaccard ~ answer, data = merged_class2)$p.value, digits = 2))
 
-jensh_c3 = round(kruskal.test(jensen.shannon ~ answer, data = merged_class3)$p.value, 3)
-euclidean_c3 = round(kruskal.test(euclidean ~ answer, data = merged_class3)$p.value, 3)
-wavehedges_c3 = round(kruskal.test(wavehedges ~ answer, data = merged_class3)$p.value, 3)
-jaccard_c3 = round(kruskal.test(jaccard ~ answer, data = merged_class3)$p.value, 3)
+jensh_c3 = as.numeric(scientific(kruskal.test(jensen.shannon ~ answer, data = merged_class3)$p.value, digits = 2))
+euclidean_c3 = as.numeric(scientific(kruskal.test(euclidean ~ answer, data = merged_class3)$p.value, digits = 2))
+wavehedges_c3 = as.numeric(scientific(kruskal.test(wavehedges ~ answer, data = merged_class3)$p.value, digits = 2))
+jaccard_c3 = as.numeric(scientific(kruskal.test(jaccard ~ answer, data = merged_class3)$p.value, digits = 2))
 
 table1 = data.frame("miara niepodobieństwa" = c("jensen-shannon", "euclidean", "wavehedges", "jaccard"),
                     "2 klasy" = c(jensh_c2, euclidean_c2, wavehedges_c2, jaccard_c2),
