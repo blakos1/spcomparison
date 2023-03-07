@@ -3,6 +3,7 @@ library(stringr)
 library(dplyr)
 library(tidyr)
 library(ggpubr)
+library(raster)
 
 # read survey data --------------------------------------------------------
 survey_data = read.csv("data/spcomparison_survey_data.csv", header = FALSE)
@@ -34,6 +35,9 @@ merged$id = as.factor(as.integer(as.factor(merged$questionID)))
 merged_class2 = subset(merged, classes == "2")
 merged_class3 = subset(merged, classes == "3")
 
+write.csv(merged_class2, file = "data/merged_class2.csv")
+write.csv(merged_class3, file = "data/merged_class3.csv")
+
 survey_data_grouped = merged %>%
   group_by(questionID, classes, answer, id) %>%
   count(answer)
@@ -49,31 +53,34 @@ merged_grouped_class3 = subset(merged_grouped, classes == "3")
 boxplot1 = ggplot(merged, aes(x = answer, y = wavehedges, fill = classes)) +
   geom_boxplot() +
   theme_bw() +
-  labs(fill = "Liczba kategorii") +
+  labs(fill = "Liczba kategorii", y = "", title = "Odległość Wave-Hedges") +
   rremove("xlab") +
   scale_fill_manual(values=c(rcartocolor::carto_pal(n = 12, name = "Safe")[c(2,3)]))
 
 boxplot2 = ggplot(merged, aes(x = answer, y = jensen.shannon, fill = classes)) +
   geom_boxplot() +
   theme_bw() +
+  labs(fill = "Liczba kategorii", y = "", title = "Odległość Jensena-Shannona") +
   scale_fill_manual(values=c(rcartocolor::carto_pal(n = 12, name = "Safe")[c(2,3)])) +
   rremove("xlab")
 
 boxplot3 = ggplot(merged, aes(x = answer, y = euclidean, fill = classes)) +
   geom_boxplot() +
   theme_bw() +
+  labs(fill = "Liczba kategorii", y = "", title = "Odległość euklidesowa") +
   scale_fill_manual(values=c(rcartocolor::carto_pal(n = 12, name = "Safe")[c(2,3)])) +
   rremove("xlab")
 
 boxplot4 = ggplot(merged, aes(x = answer, y = jaccard, fill = classes)) +
   geom_boxplot() +
   theme_bw() +
+  labs(fill = "Liczba kategorii", y = "", title = "Odległość Jaccarda") +
   scale_fill_manual(values=c(rcartocolor::carto_pal(n = 12, name = "Safe")[c(2,3)])) +
   rremove("xlab")
 
 ggarrange(boxplot1, boxplot2, boxplot3, boxplot4,
-          ncol = 2, nrow = 2, common.legend = TRUE, legend="top") %>% 
-  ggsave(filename = "plots/boxplots1.png", width = 3000, height = 2500, units = "px")
+          ncol = 4, nrow = 1, common.legend = TRUE, legend="top") %>% 
+  ggsave(filename = "plots/boxplots1.png", width = 6000, height = 1400, units = "px")
 
 
 
@@ -162,3 +169,63 @@ barplot1 = ggplot(survey_data, aes(x = answer, fill = classes)) +
 ggsave(barplot1, filename = "plots/barplot1.png",
        width = 1600, height = 1200, units = "px")
 
+
+
+# najbardziej skrajne pytania pod wzgledem odpowiedzi ---------------------
+# id 13 vs 87
+examples = subset(merged, id %in% c(13, 87))
+examples_names = unique(examples$questionID) %>% strsplit("[+]")
+
+
+# co-occurrence matrix example --------------------------------------------
+library(motif)
+library(stars)
+my_sims2_2classes = stack("data/my_sims2_2classes.tif")
+
+colnums = rep(seq(1:6), 6)
+rownums = rep(1:6, each = 6)
+names(my_sims2_2classes) = paste0("img_2classes_", "row", rownums, "_col", colnums)
+
+# subset2_1 = raster::subset(my_sims2_2classes, examples_names[[1]][1])
+# subset2_1 = st_as_stars(subset2_1)
+# st_crs(subset2_1) = "EPSG:2180"
+# 
+# coma_output1 = lsp_signature(subset2, type = "coma")
+# coma_output1$signature
+# 
+# subset2_2 = raster::subset(my_sims2_2classes, examples_names[[1]][2])
+# subset2_2 = st_as_stars(subset2_2)
+# st_crs(subset2_2) = "EPSG:2180"
+# 
+# coma_output2 = lsp_signature(subset2, type = "coma")
+# coma_output2$signature
+# 
+# compare_1 = lsp_compare(subset2_1, subset2_2, type = "cove", dist_fun = "jensen-shannon")
+# jsd1 = compare_1$dist
+
+
+rast2 = st_as_stars(my_sims2_2classes[[36]])
+rast4 = st_as_stars(my_sims2_2classes[[12]])
+
+rast2_coma = lsp_signature(rast2, type = "coma")
+rast2_coma$signature
+rast2_coma = as.data.frame(rast2_coma$signature)
+
+library(kableExtra)
+kbl(rast2_coma, "html", col.names = c("1", "2"), row.names = TRUE) %>%
+  kable_styling(font_size = 30) %>% 
+  kable_classic(full_width = F) %>%
+  save_kable(file = "plots/rast2_coma.png")
+
+rast4_coma = lsp_signature(rast4, type = "coma")
+rast4_coma$signature
+rast4_coma = as.data.frame(rast4_coma$signature)
+
+kbl(rast4_coma, "html", col.names = c("1", "2"), row.names = TRUE) %>%
+  kable_styling(font_size = 30) %>% 
+  kable_classic(full_width = F) %>%
+  save_kable(file = "plots/rast4_coma.png")
+
+compare_2 = lsp_compare(rast2, rast4, type = "cove", dist_fun = "jensen-shannon")
+jsd2 = compare_2$dist
+jsd2
