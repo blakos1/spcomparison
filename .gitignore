@@ -36,3 +36,5 @@ data/*
 !data/spcomparison_survey_data.csv
 !data/2classes_dist.csv
 !data/3classes_dist.csv
+!data/clc1990_2.tif
+!data/clc2018_2.tif
