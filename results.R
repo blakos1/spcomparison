@@ -83,7 +83,6 @@ ggarrange(boxplot1, boxplot2, boxplot3, boxplot4,
   ggsave(filename = "plots/boxplots1.png", width = 6000, height = 1400, units = "px")
 
 
-
 # stacked barplot1 --------------------------------------------------------
 library(forcats)
 
@@ -147,12 +146,46 @@ table1 = data.frame("miara niepodobieństwa" = c("jensen-shannon", "euclidean", 
                     "3 klasy" = c(jensh_c3, euclidean_c3, wavehedges_c3, jaccard_c3))
 table1 = arrange(table1, X2.klasy)
 
-library(kableExtra)
-kbl(table1, "html", col.names = c("Miara niepodobieństwa", "2 klasy", "3 klasy")) %>%
-  add_header_above(c(" ", "Wartość p-value" = 2)) %>% 
-  kable_styling(font_size = 30) %>% 
-  kable_classic(full_width = F) %>%
-  save_kable(file = "plots/table1.png")
+# library(kableExtra)
+# kbl(table1, "html", col.names = c("Miara niepodobieństwa", "2 klasy", "3 klasy")) %>%
+#   add_header_above(c(" ", "Wartość p-value" = 2)) %>% 
+#   kable_styling(font_size = 30) %>% 
+#   kable_classic(full_width = F) %>%
+#   save_kable(file = "plots/table1.png")
+
+krusk = function(measure, dataset){
+  result = kruskal.test(x = unlist(as.vector(dataset[measure])),
+                        g = dataset$answer,
+                        data = dataset)
+  
+  result$p.value %>% 
+    scientific(digits = 2) %>% 
+    as.numeric() %>% 
+    return()
+}
+
+krusk(measure = colnames(merged_class2)[8], dataset = merged_class2)
+krusk(measure = colnames(merged_class2)[8], dataset = merged_class3)
+krusk(measure = colnames(merged_class2)[8], dataset = merged)
+
+measure.names = colnames(merged)[!colnames(merged) %in% c("minkowski", "id", "questionID", "answer", "classes")]
+
+krusk_df = data.frame(measure = measure.names,
+                      pval_all = NA, pval_2class = NA, pval_3class = NA)
+
+for (i in c(1:length(krusk_df$measure))){
+  krusk_df$pval_all[i] = krusk(measure = krusk_df$measure[i], dataset = merged)
+  krusk_df$pval_2class[i] = krusk(measure = krusk_df$measure[i], dataset = merged_class2)
+  krusk_df$pval_3class[i] = krusk(measure = krusk_df$measure[i], dataset = merged_class3)
+}
+
+ggplot(data=krusk_df, aes(x= reorder(measure, pval_all), y=pval_all)) +
+  geom_point()
+
+
+a = krusk_df[!krusk_df %in% boxplot.stats(krusk_df)$out]
+ggplot(data=krusk_df, aes(x=pval_2class)) + 
+  geom_density()
 
 
 # answer count plots ------------------------------------------------------
