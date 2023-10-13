@@ -33,6 +33,7 @@ plots/*
 .secrets
 rsconnect/*
 data/*
+geodata/*
 !data/spcomparison_survey_data.csv
 !data/2classes_dist.csv
 !data/3classes_dist.csv

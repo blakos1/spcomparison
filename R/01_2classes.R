@@ -2,6 +2,7 @@
 # devtools::install_github("ropensci/NLMR")
 # devtools::install_github("ropensci/landscapetools")
 # devtools::install_github("drostlab/philentropy")
+library(RandomFields)
 library(terra)
 library(purrr)
 library(NLMR)

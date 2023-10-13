@@ -4,6 +4,7 @@ library(dplyr)
 library(tidyr)
 library(ggpubr)
 library(raster)
+library(tidyverse)
 
 # read survey data --------------------------------------------------------
 survey_data = read.csv("data/spcomparison_survey_data.csv", header = FALSE)
@@ -35,8 +36,8 @@ merged$id = as.factor(as.integer(as.factor(merged$questionID)))
 merged_class2 = subset(merged, classes == "2")
 merged_class3 = subset(merged, classes == "3")
 
-write.csv(merged_class2, file = "data/merged_class2.csv")
-write.csv(merged_class3, file = "data/merged_class3.csv")
+# write.csv(merged_class2, file = "data/merged_class2.csv")
+# write.csv(merged_class3, file = "data/merged_class3.csv")
 
 survey_data_grouped = merged %>%
   group_by(questionID, classes, answer, id) %>%
@@ -78,20 +79,20 @@ boxplot4 = ggplot(merged, aes(x = answer, y = jaccard, fill = classes)) +
   scale_fill_manual(values=c(rcartocolor::carto_pal(n = 12, name = "Safe")[c(2,3)])) +
   rremove("xlab")
 
-ggarrange(boxplot1, boxplot2, boxplot3, boxplot4,
-          ncol = 4, nrow = 1, common.legend = TRUE, legend="top") %>% 
-  ggsave(filename = "plots/boxplots1.png", width = 6000, height = 1400, units = "px")
+# ggarrange(boxplot1, boxplot2, boxplot3, boxplot4,
+#           ncol = 4, nrow = 1, common.legend = TRUE, legend="top") %>% 
+#   ggsave(filename = "plots/boxplots1.png", width = 6000, height = 1400, units = "px")
 
 
 # stacked barplot1 --------------------------------------------------------
 library(forcats)
 
-merged_class2_max = merged_grouped_class2 |>
-  select(id, n, answer) |>
-  group_by(id) |>
-  mutate(np = n/sum(n)) |>
-  arrange(-np) |>
-  filter(answer == "Brak") |>
+merged_class2_max = merged_grouped_class2 %>% 
+  subset(select = c(id, n, answer)) %>% 
+  group_by(id) %>% 
+  mutate(np = n/sum(n)) %>% 
+  arrange(-np) %>% 
+  filter(answer == "Brak") %>% 
   pull(id)
 
 diff_classes2 = setdiff(unique(merged_grouped_class2$id), merged_class2_max)
@@ -106,12 +107,12 @@ stackedplot1 = ggplot(merged_grouped_class2, aes(x = factor(id, levels = merged_
   theme_bw()
 
 
-merged_class3_max = merged_grouped_class3 |>
-  select(id, n, answer) |>
-  group_by(id) |>
-  mutate(np = n/sum(n)) |>
-  arrange(-np) |>
-  filter(answer == "Brak") |>
+merged_class3_max = merged_grouped_class3 %>% 
+  subset(select = c(id, n, answer)) %>% 
+  group_by(id) %>% 
+  mutate(np = n/sum(n)) %>% 
+  arrange(-np) %>% 
+  filter(answer == "Brak") %>% 
   pull(id)
 
 diff_classes3 = setdiff(unique(merged_grouped_class3$id), merged_class3_max)
@@ -125,8 +126,8 @@ stackedplot2 = ggplot(merged_grouped_class3, aes(x = factor(id, levels = merged_
   xlab("Numer pytania (3 kategorie)") +
   theme_bw()
 
-ggarrange(stackedplot1, stackedplot2, ncol = 1, nrow = 2, common.legend = TRUE, legend="top") %>% 
-  ggsave(filename = "plots/stacked_barplots1.png", width = 3000, height = 2500, units = "px")
+# ggarrange(stackedplot1, stackedplot2, ncol = 1, nrow = 2, common.legend = TRUE, legend="top") %>% 
+  # ggsave(filename = "plots/stacked_barplots1.png", width = 3000, height = 2500, units = "px")
 
 
 # kruskal-wallis test table -----------------------------------------------
@@ -145,6 +146,37 @@ table1 = data.frame("miara niepodobieństwa" = c("jensen-shannon", "euclidean", 
                     "2 klasy" = c(jensh_c2, euclidean_c2, wavehedges_c2, jaccard_c2),
                     "3 klasy" = c(jensh_c3, euclidean_c3, wavehedges_c3, jaccard_c3))
 table1 = arrange(table1, X2.klasy)
+
+
+
+methods = colnames(dist_merged)[!(colnames(dist_merged) %in% c("questionID", "minkowski"))]
+
+krusk_df = data.frame(method = methods)
+
+calculate_krusk = function(method_name, df){
+  formula = as.formula(paste0(method_name, " ~ answer"))
+  output = kruskal.test(formula, data = df)$p.value %>% 
+    scientific(digits = 2) %>% 
+    as.numeric()
+  output
+}
+
+krusk_df$krusk = unlist(map(krusk_df$method, calculate_krusk, merged))
+krusk_df$krusk2 = unlist(map(krusk_df$method, calculate_krusk, merged_class2))
+krusk_df$krusk3 = unlist(map(krusk_df$method, calculate_krusk, merged_class3))
+
+
+merged_class2$answer = merged_class2$answer %>% 
+  factor(levels = rev(c("Brak","Bardzo małe","Umiarkowane","Bardzo duże","Pełne"))) %>% 
+  as.integer()
+
+cor(merged_class2$answer, merged_class2$euclidean)
+
+ggplot(merged_class2, aes(wavehedges, answer)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  theme(aspect.ratio = 1)
+
 
 # library(kableExtra)
 # kbl(table1, "html", col.names = c("Miara niepodobieństwa", "2 klasy", "3 klasy")) %>%
@@ -178,6 +210,8 @@ for (i in c(1:length(krusk_df$measure))){
   krusk_df$pval_2class[i] = krusk(measure = krusk_df$measure[i], dataset = merged_class2)
   krusk_df$pval_3class[i] = krusk(measure = krusk_df$measure[i], dataset = merged_class3)
 }
+
+write.csv(krusk_df, file = "data/corrs.csv")
 
 ggplot(data=krusk_df, aes(x= reorder(measure, pval_all), y=pval_all)) +
   geom_point()
